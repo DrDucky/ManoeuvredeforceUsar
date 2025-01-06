@@ -8,12 +8,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -23,7 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffold
+import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.rememberSupportingPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
@@ -59,7 +67,6 @@ class MainActivity : ComponentActivity() {
                 }
             },
             content = { paddingValues ->
-                // Main content with padding applied correctly
                 Box(
                     modifier = Modifier
                         .padding(paddingValues)
@@ -88,22 +95,45 @@ class MainActivity : ComponentActivity() {
             value = navigator.scaffoldValue,
             supportingPane = {
                 AnimatedPane(
-                    modifier = Modifier.padding(all = 16.dp)
+                    modifier = Modifier.safeContentPadding()
                 ) {
                     Column {
                         CalculateVolume()
                     }
                 }
             }, mainPane = {
+                AnimatedPane(
+                    modifier = Modifier.safeContentPadding()
+                ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    if (navigator.scaffoldValue[SupportingPaneScaffoldRole.Supporting] == PaneAdaptedValue.Hidden) {
+                        Button(
+                            onClick = {navigator.navigateTo(
+                                ThreePaneScaffoldRole.Secondary
+                            )},
+                            modifier = Modifier.padding(8.dp).align(Alignment.End),
+                        ) {
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = null,
+                                modifier = Modifier.size(ButtonDefaults.IconSize)
+                            )
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text("Configuration de l'objet")
+                        }
+                    }
                     DisplaySchema(
-                        onNavigateToSupportingPane = { navigator.navigateTo(ThreePaneScaffoldRole.Secondary) }
+                        onNavigateToSupportingPane = {
+                            navigator.navigateTo(
+                                ThreePaneScaffoldRole.Secondary
+                            )
+                        }
                     )
-
                 }
-            })
+            }
+        })
     }
 }
