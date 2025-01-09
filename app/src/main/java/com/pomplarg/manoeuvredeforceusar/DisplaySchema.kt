@@ -2,30 +2,21 @@ package com.pomplarg.manoeuvredeforceusar
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.rememberSupportingPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -33,21 +24,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun DisplaySchema(onNavigateToSupportingPane: () -> Unit) {
+fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
+
+    val volumeUiState by volumeViewModel.uiState.collectAsState()
+
     var densiteValue by remember { mutableIntStateOf(0) }
     var densiteExpanded by remember { mutableStateOf(false) }
     val painter: Painter = painterResource(id = R.drawable.machine)
     val painterObject: Painter = painterResource(id = R.drawable.objet)
     val navigator = rememberSupportingPaneScaffoldNavigator()
+    val textMeasurer = rememberTextMeasurer()
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
         modifier = Modifier.padding(16.dp)
     ) {
@@ -64,6 +63,13 @@ fun DisplaySchema(onNavigateToSupportingPane: () -> Unit) {
                 }
                 val canvasWidth = size.width
                 val canvasHeight = size.height
+                val measuredText =
+                    textMeasurer.measure(
+                        "Density = ${volumeViewModel.uiState.value.density}",
+                        style = TextStyle(fontSize = 12.sp)
+                    )
+
+                drawText(measuredText , topLeft =  Offset(x = 220.dp.toPx(), y = 90.dp.toPx()))
                 drawLine(
                     start = Offset(x = 160.dp.toPx(), y = 95.dp.toPx()),
                     end = Offset(x = 309.dp.toPx(), y = 127.dp.toPx()),

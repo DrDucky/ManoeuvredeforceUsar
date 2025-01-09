@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pomplarg.manoeuvredeforceusar.ui.theme.ManoeuvreDeForceUSARTheme
 
 class MainActivity : ComponentActivity() {
@@ -85,6 +86,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun SupportingPaneSample() {
         val navigator = rememberSupportingPaneScaffoldNavigator()
+        val volumeViewModel: VolumeViewModel = viewModel()
 
         BackHandler(navigator.canNavigateBack()) {
             navigator.navigateBack()
@@ -98,7 +100,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.safeContentPadding()
                 ) {
                     Column {
-                        CalculateVolume()
+                        CalculateVolume(volumeViewModel)
                     }
                 }
             }, mainPane = {
@@ -125,13 +127,7 @@ class MainActivity : ComponentActivity() {
                             Text("Configuration de l'objet")
                         }
                     }
-                    DisplaySchema(
-                        onNavigateToSupportingPane = {
-                            navigator.navigateTo(
-                                ThreePaneScaffoldRole.Secondary
-                            )
-                        }
-                    )
+                    DisplaySchema(volumeViewModel)
                 }
             }
         })

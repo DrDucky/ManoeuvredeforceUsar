@@ -70,5 +70,6 @@ dependencies {
     implementation(libs.androidx.adaptive)
     implementation(libs.androidx.adaptive.layout)
     implementation(libs.androidx.adaptive.navigation)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
 }

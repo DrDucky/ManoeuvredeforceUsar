@@ -4,11 +4,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -25,12 +27,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,29 +46,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import kotlin.math.PI
-import kotlin.math.pow
+import java.util.Locale
 
 @Composable
-fun CalculateVolume() {
-    val selectedOption = remember { mutableStateOf("Saisie manuelle") }
-    val textFieldValue = remember { mutableStateOf("") }
-    val textFieldEnabled = remember { mutableStateOf(true) }
+fun CalculateVolume(volumeViewModel:  VolumeViewModel) {
+
+    val volumeUiState by volumeViewModel.uiState.collectAsState()
+
+    val poidsEnabled = remember { mutableStateOf(true) }
     val rayonValue = remember { mutableStateOf("") }
     val hauteurValue = remember { mutableStateOf("") }
-    val openAlertDialog = remember { mutableStateOf(false) }
-    val volumeValue = remember { mutableDoubleStateOf(0.0) }
-    val densiteItems = listOf("Béton", "Béton armé")
-    var densiteValue by remember { mutableIntStateOf(0) }
-    var densiteExpanded by remember { mutableStateOf(false) }
-    var betonSelected by remember { mutableStateOf(false) }
-    var betonArmeSelected by remember { mutableStateOf(false) }
+    val openConeDialog = remember { mutableStateOf(false) }
+    val openCylinderDialog = remember { mutableStateOf(false) }
+    var manualChoice by remember { mutableStateOf(true) }
+    val materialItems = mapOf("Béton" to 2,
+        "Béton armé" to 5)
+    val supportItems = mapOf("Béton sec" to 0.8,
+        "Béton mouillé" to 0.6)
+
 
     Card(
         colors = CardDefaults.cardColors(
@@ -76,28 +83,28 @@ fun CalculateVolume() {
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp))
+            modifier = Modifier.padding(16.dp)
+        )
         RadioButtonWithLabel(
             label = "Saisie manuelle",
-            selected = selectedOption.value == "Saisie manuelle",
+            selected = manualChoice,
             onClick = {
-                textFieldEnabled.value = true
-                selectedOption.value = "Saisie manuelle"
+                poidsEnabled.value = true
+                manualChoice = true
             }
         )
         RadioButtonWithLabel(
             label = "Saisie par calcul",
-            selected = selectedOption.value == "Saisie par calcul",
+            selected = !manualChoice,
             onClick = {
-                textFieldEnabled.value = false
-                selectedOption.value = "Saisie par calcul"
+                poidsEnabled.value = false
+                manualChoice = false
             }
         )
-        if (selectedOption.value == "Saisie par calcul") {
-            Row (modifier = Modifier.padding(16.dp)) {
+        if (!manualChoice) {
+            Row(modifier = Modifier.padding(16.dp)) {
                 AssistChip(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    onClick = { openAlertDialog.value = true },
+                    onClick = { openConeDialog.value = true },
                     label = { Text("Cône") },
                     leadingIcon = {
                         Icon(
@@ -109,7 +116,7 @@ fun CalculateVolume() {
                 )
                 AssistChip(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    onClick = { openAlertDialog.value = true },
+                    onClick = { openCylinderDialog.value = true },
                     label = { Text("Cylindre") },
                     leadingIcon = {
                         Icon(
@@ -122,14 +129,12 @@ fun CalculateVolume() {
             }
 
             when {
-                openAlertDialog.value -> {
+                openConeDialog.value -> {
                     DialogWithImage(
-                        onDismissRequest = { openAlertDialog.value = false },
+                        onDismissRequest = { openConeDialog.value = false },
                         onConfirmation = {
-                            openAlertDialog.value = false
-                            volumeValue.doubleValue = PI * rayonValue.value.toDouble()
-                                .pow(2) * hauteurValue.value.toDouble() * 1 / 3
-                            textFieldValue.value = volumeValue.value.toString()
+                            openConeDialog.value = false
+                            volumeViewModel.updateVolume(Volume.VolumeType.CONE, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
                         },
                         painter = painterResource(id = R.drawable.volume_cone),
                         imageDescription = "",
@@ -137,68 +142,78 @@ fun CalculateVolume() {
                         hauteurValue
                     )
                 }
+                openCylinderDialog.value -> {
+                    DialogWithImage(
+                        onDismissRequest = { openCylinderDialog.value = false },
+                        onConfirmation = {
+                            openCylinderDialog.value = false
+                            volumeViewModel.updateVolume(Volume.VolumeType.CYLINDER, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
+                        },
+                        painter = painterResource(id = R.drawable.volume_cylinder),
+                        imageDescription = "",
+                        rayonValue,
+                        hauteurValue
+                    )
+                }
             }
-            Row(modifier = Modifier.padding(16.dp)) {
-                FilterChip(
-                    onClick = { betonSelected = !betonSelected },
-                    label = {
-                        Text("Béton")
-                    },
-                    selected = betonSelected,
-                    leadingIcon = if (betonSelected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Filled.Done,
-                                contentDescription = "Done icon",
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                )
-                FilterChip(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    onClick = { betonArmeSelected = !betonArmeSelected },
-                    label = {
-                        Text("Béton armé")
-                    },
-                    selected = betonArmeSelected,
-                    leadingIcon = if (betonArmeSelected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Filled.Done,
-                                contentDescription = "Done icon",
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                )
-            }
+            Text(
+                text = "Volume : ${String.format(Locale.FRANCE,"%.2f", volumeUiState.volume)} m3",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 10.sp,
+                fontStyle = FontStyle.Italic
+            )
+
+            FilterChipGroup(
+                modifier = Modifier.padding(16.dp),
+                items = materialItems.keys.toList(),
+                onSelectedChanged = { selectedIndex ->
+                    volumeViewModel.updateDensity(materialItems[materialItems.keys.toList()[selectedIndex]])
+                    volumeViewModel.updateWeight(volumeUiState.volume, materialItems[materialItems.keys.toList()[selectedIndex]])
+                }
+            )
+            Text(
+                text = "Densité : ${volumeUiState.density}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 10.sp,
+                fontStyle = FontStyle.Italic
+            )
         }
         OutlinedTextField(
             modifier = Modifier.padding(16.dp),
-            value = textFieldValue.value,
-            enabled = textFieldEnabled.value,
-            onValueChange = { textFieldValue.value = it },
+            value = volumeUiState.weight.toString(),
+            singleLine = true,
+            enabled = poidsEnabled.value,
+            onValueChange = { volumeViewModel.updateWeightWithEntry(it) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             label = { Text("Poids") }
         )
-        /*DropdownMenu(
-            expanded = true,
-            onDismissRequest = { densiteExpanded = false }
-        ) {
-            densiteItems.forEachIndexed { index, s ->
-                DropdownMenuItem(
-                    text = { Text(s) },
-                    onClick = {
-                    densiteValue = index
-                    densiteExpanded = false
-                })
+
+        SingleChoiceSegmentedButton(modifier = Modifier.padding(16.dp))
+
+        FilterChipGroup(
+            modifier = Modifier.padding(16.dp),
+            items = supportItems.keys.toList(),
+            onSelectedChanged = { selectedIndex ->
+                volumeViewModel.updateRF(volumeUiState.volume, supportItems[supportItems.keys.toList()[selectedIndex]])
             }
-        }*/
+        )
+
+        Text(
+            text = "Résistance Fardeau : ${volumeUiState.rf}",
+            modifier = Modifier.padding(start = 16.dp),
+            fontSize = 10.sp,
+            fontStyle = FontStyle.Italic
+        )
+        Button(
+            onClick = {
+                //Valider
+            },
+            modifier = Modifier
+                .padding(8.dp)
+                .align(Alignment.End),
+        ) {
+            Text("Valider")
+        }
     }
 }
 
@@ -207,12 +222,18 @@ fun RadioButtonWithLabel(label: String, selected: Boolean, onClick: () -> Unit) 
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(16.dp)
+            .selectable(
+                selected = selected,
+                onClick = { onClick() },
+                role = Role.RadioButton
+            ),
         verticalAlignment = Alignment.CenterVertically
+
     ) {
         RadioButton(
             selected = selected,
-            onClick = onClick,
+            onClick = null, // null recommended for accessibility with screenreaders
             colors = RadioButtonDefaults.colors(
                 selectedColor = Color.Blue,
                 unselectedColor = Color.Gray
@@ -311,6 +332,64 @@ fun DialogWithImage(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun FilterChipGroup(
+    modifier: Modifier,
+    items: List<String>,
+    defaultSelectedItemIndex: Int = 0,
+    onSelectedChanged: (Int) -> Unit = {}
+) {
+    var selectedItemIndex by remember { mutableStateOf(defaultSelectedItemIndex) }
+    var firstSelection by remember { mutableStateOf(false) }
+
+    LazyRow(userScrollEnabled = true, modifier = modifier) {
+        items(items.size) { index: Int ->
+            FilterChip(
+                modifier = Modifier.padding(end = 6.dp),
+                selected = firstSelection && items[selectedItemIndex] == items[index],
+                onClick = {
+                    firstSelection = true
+                    selectedItemIndex = index
+                    onSelectedChanged(index)
+                },
+                label = { Text(items[index]) },
+                leadingIcon = if (firstSelection && items[selectedItemIndex] == items[index]) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Done,
+                            contentDescription = "item selected",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else {
+                    null
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SingleChoiceSegmentedButton(modifier: Modifier = Modifier) {
+    var selectedIndex by remember { mutableIntStateOf(0) }
+    val options = listOf("Frottement", "Roulement")
+
+    SingleChoiceSegmentedButtonRow (modifier = modifier) {
+        options.forEachIndexed { index, label ->
+            SegmentedButton(
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = options.size
+                ),
+                onClick = { selectedIndex = index },
+                selected = index == selectedIndex,
+                label = { Text(label) }
+            )
         }
     }
 }
