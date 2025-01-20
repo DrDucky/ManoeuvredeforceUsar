@@ -6,12 +6,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.math.PI
+import kotlin.math.ceil
 import kotlin.math.pow
 
 class VolumeViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(VolumeUiState())
     val uiState: StateFlow<VolumeUiState> = _uiState.asStateFlow()
+    private val crbrins = mapOf(1 to 1.0, 2 to 1.9, 3 to 2.75, 4 to 3.44, 5 to 4.09)
 
     init {
         _uiState.value = VolumeUiState(
@@ -38,17 +40,6 @@ class VolumeViewModel : ViewModel() {
         updateWeight(volume, _uiState.value.density)
     }
 
-    fun updateWeight(volume: Double, density: Int?) {
-        var weight = 0.0
-        density?.let {
-            weight = volume * it
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                weight =  weight
-            )
-        }
-    }
 
     fun updateDensity(density: Int?) {
         density?.let {
@@ -58,24 +49,127 @@ class VolumeViewModel : ViewModel() {
                 )
             }
         }
+        updateWeight(_uiState.value.volume, density)
     }
 
-    fun updateRF(poids: Double, cf: Double?) {
+    fun updateRF(cf: Double?) {
         cf?.let {
-            val rf = poids * cf
+            val rf = _uiState.value.weight * cf
             _uiState.update { currentState ->
                 currentState.copy(
+                    cf = cf,
                     rf = rf
                 )
             }
+            updateNbBrins(rf, _uiState.value.emd)
         }
+        updateSecurity()
     }
 
-    fun updateWeightWithEntry(entry: String) {
+    private fun updateWeight(volume: Double, density: Int?) {
+        var weight = 0.0
+        density?.let {
+            weight = volume * it
+        }
         _uiState.update { currentState ->
             currentState.copy(
-                weight =  entry.toDouble()
+                weight =  weight
+            )
+        }
+        updateRF(_uiState.value.cf)
+    }
+
+    fun updateWeightWithManualEntry(entry: String) {
+        if(entry.isNotBlank()) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    weight = entry.toDouble()
+                )
+            }
+        }
+        updateRF(_uiState.value.cf)
+    }
+
+    fun updateEmd(emd: Int) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                emd =  emd
+            )
+        }
+        updateNbBrins(_uiState.value.rf, emd)
+        updateSecurity()
+    }
+
+    fun updateNbBrins(rf: Double, emd: Int) {
+        val nbBrins = (ceil(rf / emd).toInt() + 1).coerceAtLeast(0)
+        _uiState.update { currentState ->
+            currentState.copy(
+                nbBrins =  nbBrins,
+            )
+        }
+        crbrins[nbBrins]?.let {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    crBrins = it
+                )
+            }
+        }
+        when {
+            nbBrins <= 0 -> _uiState.update { currentState ->
+                currentState.copy(
+                    a1Activated =  false,
+                    a2Activated = false,
+                    a3Activated = false
+                )
+            }
+             nbBrins == 1 -> _uiState.update { currentState ->
+                currentState.copy(
+                    a1Activated =  true,
+                    a2Activated = false,
+                    a3Activated = false
+                )
+            }
+            nbBrins == 2 -> _uiState.update { currentState ->
+                currentState.copy(
+                    a1Activated =  true,
+                    a2Activated = true,
+                    a3Activated = false
+                )
+            }
+            nbBrins == 3 -> _uiState.update { currentState ->
+                currentState.copy(
+                    a1Activated =  true,
+                    a2Activated = true,
+                    a3Activated = true
+                )
+            }
+            else ->_uiState.update { currentState ->
+            currentState.copy(
+                a1Activated =  true,
+                a2Activated = true,
+                a3Activated = true
+            )
+        }
+        }
+        updateSecurity()
+    }
+
+    private fun updateA1() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                a1 = _uiState.value.rf / _uiState.value.crBrins
             )
         }
     }
+
+    private fun updateSecurity() {
+        val security = ((_uiState.value.emd * _uiState.value.crBrins - _uiState.value.rf)/_uiState.value.rf) * 100
+        _uiState.update { currentState ->
+            currentState.copy(
+                safety =  security
+            )
+        }
+        updateA1()
+    }
+
 }

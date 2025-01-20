@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.safeContentPadding()
                 ) {
                     Column {
-                        CalculateVolume(volumeViewModel)
+                        CalculateVolume(volumeViewModel, navigator)
                     }
                 }
             }, mainPane = {
