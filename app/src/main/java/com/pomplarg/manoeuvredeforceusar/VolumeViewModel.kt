@@ -11,165 +11,98 @@ import kotlin.math.pow
 
 class VolumeViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(VolumeUiState())
-    val uiState: StateFlow<VolumeUiState> = _uiState.asStateFlow()
+    private val _volumeState = MutableStateFlow(VolumeState())
+    val volumeState: StateFlow<VolumeState> = _volumeState.asStateFlow()
+    private val _volumeUiState = MutableStateFlow(VolumeUiState())
+    val volumeUiState: StateFlow<VolumeUiState> = _volumeUiState.asStateFlow()
     private val crbrins = mapOf(1 to 1.0, 2 to 1.9, 3 to 2.75, 4 to 3.44, 5 to 4.09)
 
     init {
-        _uiState.value = VolumeUiState(
-        )
+        _volumeState.value = VolumeState()
+        _volumeUiState.value = VolumeUiState()
     }
 
     fun updateVolume(volumeType: Volume.VolumeType, rayon: Double, hauteur: Double) {
-        val volume = when(volumeType) {
-            Volume.VolumeType.CONE -> {
-                PI * rayon
-                    .pow(2) * hauteur * 1 / 3
-            }
-
-            Volume.VolumeType.CYLINDER -> {
-                PI * rayon
-                    .pow(2) * hauteur
-            }
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                volume =  volume
-            )
-        }
-        updateWeight(volume, _uiState.value.density)
+        val volume = calculateVolume(volumeType, rayon, hauteur)
+        _volumeState.update { it.copy(volume = volume) }
+        updateWeight(volume, _volumeState.value.density)
     }
-
 
     fun updateDensity(density: Int?) {
         density?.let {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    density = density
-                )
-            }
+            _volumeState.update { it.copy(density = density) }
+            updateWeight(_volumeState.value.volume, density)
         }
-        updateWeight(_uiState.value.volume, density)
     }
 
     fun updateRF(cf: Double?) {
         cf?.let {
-            val rf = _uiState.value.weight * cf
-            _uiState.update { currentState ->
-                currentState.copy(
-                    cf = cf,
-                    rf = rf
-                )
-            }
-            updateNbBrins(rf, _uiState.value.emd)
+            val rf = _volumeState.value.weight * cf
+            _volumeState.update { it.copy(cf = cf, rf = rf) }
+            updateNbBrins(rf, _volumeState.value.emd)
         }
         updateSecurity()
     }
 
     private fun updateWeight(volume: Double, density: Int?) {
-        var weight = 0.0
-        density?.let {
-            weight = volume * it
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                weight =  weight
-            )
-        }
-        updateRF(_uiState.value.cf)
+        val weight = density?.let { volume * it } ?: 0.0
+        _volumeState.update { it.copy(weight = weight) }
+        updateRF(_volumeState.value.cf)
     }
 
     fun updateWeightWithManualEntry(entry: String) {
-        if(entry.isNotBlank()) {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    weight = entry.toDouble()
-                )
-            }
+        if (entry.isNotBlank()) {
+            _volumeState.update { it.copy(weight = entry.toDouble()) }
+            updateRF(_volumeState.value.cf)
         }
-        updateRF(_uiState.value.cf)
+    }
+
+    fun updateManuelChoice(manualChoice: Boolean) {
+        _volumeUiState.update { it.copy(manualChoice = manualChoice) }
     }
 
     fun updateEmd(emd: Int) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                emd =  emd
-            )
-        }
-        updateNbBrins(_uiState.value.rf, emd)
+        _volumeState.update { it.copy(emd = emd) }
+        updateNbBrins(_volumeState.value.rf, emd)
         updateSecurity()
     }
 
     fun updateNbBrins(rf: Double, emd: Int) {
         val nbBrins = (ceil(rf / emd).toInt() + 1).coerceAtLeast(0)
-        _uiState.update { currentState ->
-            currentState.copy(
-                nbBrins =  nbBrins,
-            )
-        }
-        crbrins[nbBrins]?.let {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    crBrins = it
-                )
-            }
-        }
-        when {
-            nbBrins <= 0 -> _uiState.update { currentState ->
-                currentState.copy(
-                    a1Activated =  false,
-                    a2Activated = false,
-                    a3Activated = false
-                )
-            }
-             nbBrins == 1 -> _uiState.update { currentState ->
-                currentState.copy(
-                    a1Activated =  true,
-                    a2Activated = false,
-                    a3Activated = false
-                )
-            }
-            nbBrins == 2 -> _uiState.update { currentState ->
-                currentState.copy(
-                    a1Activated =  true,
-                    a2Activated = true,
-                    a3Activated = false
-                )
-            }
-            nbBrins == 3 -> _uiState.update { currentState ->
-                currentState.copy(
-                    a1Activated =  true,
-                    a2Activated = true,
-                    a3Activated = true
-                )
-            }
-            else ->_uiState.update { currentState ->
-            currentState.copy(
-                a1Activated =  true,
-                a2Activated = true,
-                a3Activated = true
-            )
-        }
-        }
+        _volumeState.update { it.copy(nbBrins = nbBrins, crBrins = crbrins[nbBrins] ?: 0.0) }
+        updateAStates(nbBrins)
         updateSecurity()
     }
 
-    private fun updateA1() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                a1 = _uiState.value.rf / _uiState.value.crBrins
+    private fun updateAStates(nbBrins: Int) {
+        _volumeState.update {
+            it.copy(
+                a1Activated = nbBrins >= 1,
+                a2Activated = nbBrins >= 2,
+                a3Activated = nbBrins >= 3
             )
         }
+    }
+
+    private fun updateA1() {
+        _volumeState.update { it.copy(a1 = _volumeState.value.rf / _volumeState.value.crBrins) }
     }
 
     private fun updateSecurity() {
-        val security = ((_uiState.value.emd * _uiState.value.crBrins - _uiState.value.rf)/_uiState.value.rf) * 100
-        _uiState.update { currentState ->
-            currentState.copy(
-                safety =  security
-            )
-        }
+        val security = ((_volumeState.value.emd * _volumeState.value.crBrins - _volumeState.value.rf) / _volumeState.value.rf) * 100
+        _volumeState.update { it.copy(safety = security) }
         updateA1()
     }
 
+    fun updateVolumeSelected(openConeDialogSelected: Boolean, openCylinderDialogSelected: Boolean) {
+        _volumeUiState.update { it.copy(openConeDialogSelected = openConeDialogSelected,
+            openCylinderDialogSelected = openCylinderDialogSelected) }
+    }
+
+    private fun calculateVolume(volumeType: Volume.VolumeType, rayon: Double, hauteur: Double): Double {
+        return when (volumeType) {
+            Volume.VolumeType.CONE -> PI * rayon.pow(2) * hauteur / 3
+            Volume.VolumeType.CYLINDER -> PI * rayon.pow(2) * hauteur
+        }
+    }
 }

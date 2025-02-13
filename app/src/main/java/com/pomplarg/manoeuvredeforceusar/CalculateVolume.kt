@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -24,7 +27,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.DialogWithImage
 import com.pomplarg.manoeuvredeforceusar.ui.composables.FilterChipGroup
+import com.pomplarg.manoeuvredeforceusar.ui.composables.InclineApp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.RadioButtonWithLabel
 import com.pomplarg.manoeuvredeforceusar.ui.composables.SingleChoiceSegmentedButton
 import java.util.Locale
@@ -46,7 +49,8 @@ fun CalculateVolume(
     navigator: ThreePaneScaffoldNavigator<Nothing>
 ) {
 
-    val volumeUiState by volumeViewModel.uiState.collectAsState()
+    val volumeState by volumeViewModel.volumeState.collectAsState()
+    val volumeUiState by volumeViewModel.volumeUiState.collectAsState()
 
     val poidsEnabled = remember { mutableStateOf(true) }
     val poidsValue = remember { mutableStateOf("") }
@@ -54,7 +58,6 @@ fun CalculateVolume(
     val hauteurValue = remember { mutableStateOf("") }
     val openConeDialog = remember { mutableStateOf(false) }
     val openCylinderDialog = remember { mutableStateOf(false) }
-    var manualChoice by remember { mutableStateOf(true) }
     val materialItems = mapOf("Béton" to 2,
         "Béton armé" to 5)
     val supportItems = mapOf("Béton sec" to 0.8,
@@ -73,28 +76,35 @@ fun CalculateVolume(
         Text(
             text = "Configuration de l'objet",
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(16.dp)
         )
+        Text(
+            text = "Saisie du poids",
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
         RadioButtonWithLabel(
             label = "Saisie manuelle",
-            selected = manualChoice,
+            selected = volumeUiState.manualChoice,
             onClick = {
                 poidsEnabled.value = true
-                manualChoice = true
+                volumeViewModel.updateManuelChoice(true)
             }
         )
         RadioButtonWithLabel(
             label = "Saisie par calcul",
-            selected = !manualChoice,
+            selected = !volumeUiState.manualChoice,
             onClick = {
                 poidsEnabled.value = false
-                manualChoice = false
+                volumeViewModel.updateManuelChoice(false)
             }
         )
 
-        if(manualChoice) {
+        if(volumeUiState.manualChoice) {
             OutlinedTextField(
                 modifier = Modifier.padding(16.dp),
                 value = poidsValue.value,
@@ -113,6 +123,15 @@ fun CalculateVolume(
                 AssistChip(
                     onClick = { openConeDialog.value = true },
                     label = { Text("Cône") },
+                    trailingIcon = {
+                        if (volumeUiState.openConeDialogSelected) {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "item selected",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(id = R.drawable.cone),
@@ -125,6 +144,15 @@ fun CalculateVolume(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     onClick = { openCylinderDialog.value = true },
                     label = { Text("Cylindre") },
+                    trailingIcon = {
+                        if (volumeUiState.openCylinderDialogSelected) {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "item selected",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(id = R.drawable.cylinder),
@@ -142,6 +170,7 @@ fun CalculateVolume(
                         onConfirmation = {
                             openConeDialog.value = false
                             volumeViewModel.updateVolume(Volume.VolumeType.CONE, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
+                            volumeViewModel.updateVolumeSelected(true, false)
                         },
                         painter = painterResource(id = R.drawable.volume_cone),
                         imageDescription = "",
@@ -155,6 +184,9 @@ fun CalculateVolume(
                         onConfirmation = {
                             openCylinderDialog.value = false
                             volumeViewModel.updateVolume(Volume.VolumeType.CYLINDER, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
+
+                            volumeViewModel.updateVolumeSelected(false, true)
+
                         },
                         painter = painterResource(id = R.drawable.volume_cylinder),
                         imageDescription = "",
@@ -164,7 +196,7 @@ fun CalculateVolume(
                 }
             }
             Text(
-                text = "Volume : ${String.format(Locale.FRANCE,"%.2f", volumeUiState.volume)} m3",
+                text = "Volume : ${String.format(Locale.FRANCE,"%.2f", volumeState.volume)} m3",
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 10.sp,
                 fontStyle = FontStyle.Italic
@@ -178,14 +210,14 @@ fun CalculateVolume(
                 }
             )
             Text(
-                text = "Densité : ${volumeUiState.density}",
+                text = "Densité : ${volumeState.density}",
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 10.sp,
                 fontStyle = FontStyle.Italic
             )
 
             Text(
-                text = "Poids : ${volumeUiState.weight}",
+                text = "Poids : ${volumeState.weight}",
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 10.sp,
                 fontStyle = FontStyle.Italic
@@ -204,8 +236,10 @@ fun CalculateVolume(
             }
         )
 
+        InclineApp()
+
         Text(
-            text = "Résistance Fardeau : ${volumeUiState.rf}",
+            text = "Résistance Fardeau : ${volumeState.rf}",
             modifier = Modifier.padding(start = 16.dp),
             fontSize = 10.sp,
             fontStyle = FontStyle.Italic

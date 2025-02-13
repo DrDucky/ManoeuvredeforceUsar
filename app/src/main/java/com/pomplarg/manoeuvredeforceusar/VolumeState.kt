@@ -1,6 +1,6 @@
 package com.pomplarg.manoeuvredeforceusar
 
-data class VolumeUiState(
+data class VolumeState(
     val volume: Double = 0.0,
     val weight: Double = 0.0,
     val density: Int = 0,
@@ -14,6 +14,12 @@ data class VolumeUiState(
     val a2Activated: Boolean = false,
     val a3Activated: Boolean = false,
     val safety: Double = 0.0
+)
+
+data class VolumeUiState(
+    val manualChoice: Boolean = true,
+    val openConeDialogSelected: Boolean = false,
+    val openCylinderDialogSelected: Boolean = false
 )
 
 sealed class Volume {

@@ -13,15 +13,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.navigation.rememberSupportingPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -38,11 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.SingleChoiceSegmentedButton
 
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
 
-    val volumeUiState by volumeViewModel.uiState.collectAsState()
+    val volumeUiState by volumeViewModel.volumeState.collectAsState()
 
     val emdValue = remember { mutableStateOf("") }
     var emdDisplayed by remember { mutableStateOf(false) }
@@ -123,7 +119,7 @@ fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
                 val canvasHeight = size.height
                 val measuredText =
                     textMeasurer.measure(
-                        "A1 = ${volumeViewModel.uiState.value.a1}",
+                        "A1 = ${volumeViewModel.volumeState.value.a1}",
                         style = TextStyle(fontSize = 12.sp)
                     )
 
