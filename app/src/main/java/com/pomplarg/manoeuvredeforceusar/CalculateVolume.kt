@@ -23,24 +23,24 @@ import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.layout.SupportingPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pomplarg.manoeuvredeforceusar.Constants.FROTTEMENT_KEY
+import com.pomplarg.manoeuvredeforceusar.Constants.ROULEMENT_KEY
 import com.pomplarg.manoeuvredeforceusar.ui.composables.DialogWithImage
 import com.pomplarg.manoeuvredeforceusar.ui.composables.FilterChipGroup
 import com.pomplarg.manoeuvredeforceusar.ui.composables.InclineApp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.RadioButtonWithLabel
 import com.pomplarg.manoeuvredeforceusar.ui.composables.SingleChoiceSegmentedButton
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -49,34 +49,36 @@ fun CalculateVolume(
     navigator: ThreePaneScaffoldNavigator<Nothing>
 ) {
 
-    val volumeState by volumeViewModel.volumeState.collectAsState()
-    val volumeUiState by volumeViewModel.volumeUiState.collectAsState()
-
     val poidsEnabled = remember { mutableStateOf(true) }
     val poidsValue = remember { mutableStateOf("") }
     val rayonValue = remember { mutableStateOf("") }
+    val density = remember { mutableDoubleStateOf(0.0) }
     val hauteurValue = remember { mutableStateOf("") }
     val openConeDialog = remember { mutableStateOf(false) }
     val openCylinderDialog = remember { mutableStateOf(false) }
-    val materialItems = mapOf("Béton" to 2,
-        "Béton armé" to 5)
-    val supportItems = mapOf("Béton sec" to 0.8,
-        "Béton mouillé" to 0.6)
-    val cfcrItems = listOf("Frottement",
-        "Roulement")
-
+    val materialItems = mapOf("Béton" to 2.0,
+        "Béton armé" to 5.0)
+    val categoryFrottementRoulement = listOf(FROTTEMENT_KEY,
+        ROULEMENT_KEY)
+    var categoryFrottementRoulementSelected = remember { mutableStateOf("Frottement") }
+    val supportFrottementRoulementSelected = remember { mutableStateOf("") }
+    val manualChoice = remember { mutableStateOf(true) }
+    val volumeTypeSelected = remember { mutableStateOf("") }
+    val angleValue = remember { mutableFloatStateOf(0f) }
 
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
-        modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
 
     ) {
         Text(
             text = "Configuration de l'objet",
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(16.dp)
         )
@@ -89,22 +91,22 @@ fun CalculateVolume(
         )
         RadioButtonWithLabel(
             label = "Saisie manuelle",
-            selected = volumeUiState.manualChoice,
+            selected = manualChoice.value,
             onClick = {
                 poidsEnabled.value = true
-                volumeViewModel.updateManuelChoice(true)
+                manualChoice.value = true
             }
         )
         RadioButtonWithLabel(
             label = "Saisie par calcul",
-            selected = !volumeUiState.manualChoice,
+            selected = !manualChoice.value,
             onClick = {
                 poidsEnabled.value = false
-                volumeViewModel.updateManuelChoice(false)
+                manualChoice.value = false
             }
         )
 
-        if(volumeUiState.manualChoice) {
+        if(manualChoice.value) {
             OutlinedTextField(
                 modifier = Modifier.padding(16.dp),
                 value = poidsValue.value,
@@ -112,7 +114,6 @@ fun CalculateVolume(
                 enabled = poidsEnabled.value,
                 onValueChange = {
                     poidsValue.value = it
-                    volumeViewModel.updateWeightWithManualEntry(it)
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 label = { Text("Poids") }
@@ -124,7 +125,7 @@ fun CalculateVolume(
                     onClick = { openConeDialog.value = true },
                     label = { Text("Cône") },
                     trailingIcon = {
-                        if (volumeUiState.openConeDialogSelected) {
+                        if (volumeTypeSelected.value == Volume.VolumeType.CONE.name) {
                             Icon(
                                 imageVector = Icons.Filled.Done,
                                 contentDescription = "item selected",
@@ -145,7 +146,7 @@ fun CalculateVolume(
                     onClick = { openCylinderDialog.value = true },
                     label = { Text("Cylindre") },
                     trailingIcon = {
-                        if (volumeUiState.openCylinderDialogSelected) {
+                        if (volumeTypeSelected.value == Volume.VolumeType.CYLINDER.name) {
                             Icon(
                                 imageVector = Icons.Filled.Done,
                                 contentDescription = "item selected",
@@ -169,8 +170,7 @@ fun CalculateVolume(
                         onDismissRequest = { openConeDialog.value = false },
                         onConfirmation = {
                             openConeDialog.value = false
-                            volumeViewModel.updateVolume(Volume.VolumeType.CONE, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
-                            volumeViewModel.updateVolumeSelected(true, false)
+                            volumeTypeSelected.value = Volume.VolumeType.CONE.name
                         },
                         painter = painterResource(id = R.drawable.volume_cone),
                         imageDescription = "",
@@ -183,10 +183,7 @@ fun CalculateVolume(
                         onDismissRequest = { openCylinderDialog.value = false },
                         onConfirmation = {
                             openCylinderDialog.value = false
-                            volumeViewModel.updateVolume(Volume.VolumeType.CYLINDER, rayonValue.value.toDouble(), hauteurValue.value.toDouble())
-
-                            volumeViewModel.updateVolumeSelected(false, true)
-
+                            volumeTypeSelected.value = Volume.VolumeType.CYLINDER.name
                         },
                         painter = painterResource(id = R.drawable.volume_cylinder),
                         imageDescription = "",
@@ -195,58 +192,58 @@ fun CalculateVolume(
                     )
                 }
             }
-            Text(
-                text = "Volume : ${String.format(Locale.FRANCE,"%.2f", volumeState.volume)} m3",
-                modifier = Modifier.padding(start = 16.dp),
-                fontSize = 10.sp,
-                fontStyle = FontStyle.Italic
-            )
 
             FilterChipGroup(
                 modifier = Modifier.padding(16.dp),
                 items = materialItems.keys.toList(),
                 onSelectedChanged = { selectedIndex ->
-                    volumeViewModel.updateDensity(materialItems[materialItems.keys.toList()[selectedIndex]])
+                    materialItems[materialItems.keys.toList()[selectedIndex]]?.let {
+                        density.value = it
+                    }
                 }
-            )
-            Text(
-                text = "Densité : ${volumeState.density}",
-                modifier = Modifier.padding(start = 16.dp),
-                fontSize = 10.sp,
-                fontStyle = FontStyle.Italic
-            )
-
-            Text(
-                text = "Poids : ${volumeState.weight}",
-                modifier = Modifier.padding(start = 16.dp),
-                fontSize = 10.sp,
-                fontStyle = FontStyle.Italic
             )
         }
 
-        SingleChoiceSegmentedButton(modifier = Modifier.padding(16.dp), cfcrItems, onClickButton = {
-            //TODO
+        SingleChoiceSegmentedButton(modifier = Modifier.padding(16.dp), categoryFrottementRoulement, onClickButton = {
+            categoryFrottementRoulementSelected.value =  categoryFrottementRoulement[it]
         })
 
         FilterChipGroup(
             modifier = Modifier.padding(16.dp),
-            items = supportItems.keys.toList(),
+            defaultSelectedItemIndex = 0,
+            items = volumeViewModel.supportItems.keys.toList(),
             onSelectedChanged = { selectedIndex ->
-                volumeViewModel.updateRF(supportItems[supportItems.keys.toList()[selectedIndex]])
+                supportFrottementRoulementSelected.value = volumeViewModel.supportItems.keys.toList()[selectedIndex]
             }
         )
 
-        InclineApp()
+        InclineApp(onClickButton = {
+                angle -> angleValue.floatValue = angle
+        })
 
-        Text(
-            text = "Résistance Fardeau : ${volumeState.rf}",
-            modifier = Modifier.padding(start = 16.dp),
-            fontSize = 10.sp,
-            fontStyle = FontStyle.Italic
-        )
         if (navigator.scaffoldValue[SupportingPaneScaffoldRole.Supporting] == PaneAdaptedValue.Expanded) {
             Button(
+                enabled = ((manualChoice.value && poidsValue.value.isNotBlank()) ||
+                        (!manualChoice.value && volumeTypeSelected.value.isNotEmpty() && density.value != 0.0)) &&
+                        supportFrottementRoulementSelected.value.isNotEmpty() &&
+                        categoryFrottementRoulementSelected.value.isNotEmpty(),
                 onClick = {
+                    if(manualChoice.value) {
+                        volumeViewModel.updateRFManuel(
+                            poidsValue.value.toDouble(),
+                            categoryFrottementRoulementSelected.value,
+                            supportFrottementRoulementSelected.value,
+                            angleValue.floatValue)
+                    } else {
+                        volumeViewModel.updateRFCalcul(
+                            volumeTypeSelected.value,
+                            rayonValue.value.toDouble(),
+                            hauteurValue.value.toDouble(),
+                            density.doubleValue,
+                            categoryFrottementRoulementSelected.value,
+                            supportFrottementRoulementSelected.value,
+                            angleValue.floatValue)
+                    }
                     navigator.navigateBack()
                 },
                 modifier = Modifier
@@ -257,4 +254,10 @@ fun CalculateVolume(
             }
         }
     }
+
+}
+
+object Constants {
+    const val FROTTEMENT_KEY = "Frottement"
+    const val ROULEMENT_KEY = "Roulement"
 }

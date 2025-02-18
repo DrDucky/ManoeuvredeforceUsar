@@ -34,6 +34,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.SingleChoiceSegmentedButton
+import kotlin.math.roundToInt
 
 @Composable
 fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
@@ -81,16 +82,28 @@ fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
                     singleLine = true,
                     onValueChange = {
                         emdValue.value = it
-                        volumeViewModel.updateEmd(it.toInt())
+                        volumeViewModel.updateEmd(it.toIntOrNull()?:0)
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     label = { Text("Emd") }
                 )
             }
             Text(
+                text = "Poids : ${volumeUiState.weight.roundToInt()}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic
+            )
+            Text(
+                text = "Résistance Fardeau : ${volumeUiState.rf.roundToInt()}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic
+            )
+            Text(
                 text = "EMD : ${volumeUiState.emd}",
                 modifier = Modifier.padding(start = 16.dp),
-                fontSize = 10.sp,
+                fontSize = 16.sp,
                 fontStyle = FontStyle.Italic
             )
             Text(
@@ -104,7 +117,7 @@ fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 16.sp)
             Text(
-                text = "Sécurité du mouflage : ${volumeUiState.safety}",
+                text = "Sécurité du mouflage : ${volumeUiState.safety} %",
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 16.sp,
                 color = Color.Red)
