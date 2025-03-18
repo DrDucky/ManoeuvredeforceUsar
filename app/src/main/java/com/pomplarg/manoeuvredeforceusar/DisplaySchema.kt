@@ -1,10 +1,15 @@
 package com.pomplarg.manoeuvredeforceusar
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,15 +30,18 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pomplarg.manoeuvredeforceusar.ui.composables.SingleChoiceSegmentedButton
+import com.pomplarg.manoeuvredeforceusar.ui.theme.Secondary40
 import kotlin.math.roundToInt
 
 @Composable
@@ -55,12 +63,11 @@ fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize().verticalScroll(rememberScrollState())
-        ) {
+        Column (modifier = Modifier.fillMaxSize()) {
             SingleChoiceSegmentedButton(Modifier.padding(16.dp),
                 treuilsItems,
                 onClickButton = {
@@ -115,55 +122,84 @@ fun DisplaySchema(volumeViewModel:  VolumeViewModel) {
             Text(
                 text = "Nombre de brins : ${volumeUiState.nbBrins}",
                 modifier = Modifier.padding(start = 16.dp),
+                color = Secondary40,
+                fontWeight = FontWeight.Bold,
                 fontSize = 16.sp)
             Text(
-                text = "Sécurité du mouflage : ${volumeUiState.safety} %",
+                text = "Sécurité du mouflage : ${volumeUiState.safety.roundToInt()} %",
                 modifier = Modifier.padding(start = 16.dp),
                 fontSize = 16.sp,
-                color = Color.Red)
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth().padding(vertical = 16.dp)
-            ) {
-                with(painter) {
-                    draw(size = Size(200.dp.toPx(), 200.dp.toPx()))
-                }
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                val measuredText =
-                    textMeasurer.measure(
-                        "A1 = ${volumeViewModel.volumeState.value.a1}",
-                        style = TextStyle(fontSize = 12.sp)
-                    )
-
-                drawText(measuredText , topLeft =  Offset(x = 220.dp.toPx(), y = 90.dp.toPx()))
-                drawLine(
-                    start = Offset(x = 160.dp.toPx(), y = 95.dp.toPx()),
-                    end = Offset(x = 309.dp.toPx(), y = 127.dp.toPx()),
-                    color = a1Color,
-                    strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
-                )
-                drawLine(
-                    start = Offset(x = 131.dp.toPx(), y = 136.dp.toPx()),
-                    end = Offset(x = 331.dp.toPx(), y = 161.dp.toPx()),
-                    color = a2Color,
-                    strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
-                )
-                drawLine(
-                    start = Offset(x = 121.dp.toPx(), y = 165.dp.toPx()),
-                    end = Offset(x = 359.dp.toPx(), y = 184.dp.toPx()),
-                    color = a3Color,
-                    strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
-                )
-                translate(
-                    left = 300.dp.toPx(),
-                    top = 100.dp.toPx()
+                fontWeight = FontWeight.Bold,
+                color = if(volumeUiState.safety < 20) Color.Red else Secondary40)
+            Box(modifier = Modifier.height(250.dp)) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth().padding(16.dp)
                 ) {
-                    with(painterObject) {
-                        draw(size = Size(100.dp.toPx(), 100.dp.toPx()))
+                    with(painter) {
+                        draw(size = Size(200.dp.toPx(), 200.dp.toPx()))
+                    }
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+                    val measuredText =
+                        textMeasurer.measure(
+                            "A1 = ${volumeViewModel.volumeState.value.a1.roundToInt()}",
+                            style = TextStyle(fontSize = 12.sp)
+                        )
+
+                    drawText(measuredText, topLeft = Offset(x = 220.dp.toPx(), y = 90.dp.toPx()))
+                    drawLine(
+                        start = Offset(x = 160.dp.toPx(), y = 95.dp.toPx()),
+                        end = Offset(x = 309.dp.toPx(), y = 127.dp.toPx()),
+                        color = a1Color,
+                        strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
+                    )
+                    drawLine(
+                        start = Offset(x = 131.dp.toPx(), y = 136.dp.toPx()),
+                        end = Offset(x = 331.dp.toPx(), y = 161.dp.toPx()),
+                        color = a2Color,
+                        strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
+                    )
+                    drawLine(
+                        start = Offset(x = 121.dp.toPx(), y = 165.dp.toPx()),
+                        end = Offset(x = 359.dp.toPx(), y = 184.dp.toPx()),
+                        color = a3Color,
+                        strokeWidth = 4.dp.toPx() // instead of 5.dp.toPx() , you can also pass 5f
+                    )
+                    translate(
+                        left = canvasWidth - 100.dp.toPx(),
+                        top = 100.dp.toPx()
+                    ) {
+                        with(painterObject) {
+                            draw(size = Size(100.dp.toPx(), 100.dp.toPx()))
+                        }
                     }
                 }
             }
+        Text(
+            text = "Poids : ${volumeUiState.weight.roundToInt()}",
+            modifier = Modifier.padding(start = 16.dp),
+            fontSize = 16.sp,
+            fontStyle = FontStyle.Italic
+        )
+            Text(
+                text = "Poids : ${volumeUiState.weight.roundToInt()}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic
+            )
+            Text(
+                text = "Poids : ${volumeUiState.weight.roundToInt()}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 16.sp,
+                fontStyle = FontStyle.Italic
+            )
+            Text(
+                text = "Poids : ${volumeUiState.weight.roundToInt()}",
+                modifier = Modifier.padding(start = 16.dp),
+                fontSize = 28.sp,
+                fontStyle = FontStyle.Italic
+            )
         }
     }
 }

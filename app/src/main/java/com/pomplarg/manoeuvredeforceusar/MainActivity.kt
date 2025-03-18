@@ -5,28 +5,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
@@ -50,36 +39,6 @@ class MainActivity : ComponentActivity() {
                 SupportingPaneSample()
             }
         }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun UsarApp() {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("USAR - Manoeuvre de force") },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.primary) // Modifier applied properly
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = { /* Your action */ }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add")
-                }
-            },
-            content = { paddingValues ->
-                Box(
-                    modifier = Modifier
-                        .padding(paddingValues)
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Column {
-                        SupportingPaneSample()
-                    }
-                }
-            }
-        )
     }
 
     @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -107,10 +66,7 @@ class MainActivity : ComponentActivity() {
                 AnimatedPane(
                     modifier = Modifier.safeContentPadding()
                 ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                Column {
                     if (navigator.scaffoldValue[SupportingPaneScaffoldRole.Supporting] == PaneAdaptedValue.Hidden) {
                         Button(
                             onClick = {navigator.navigateTo(

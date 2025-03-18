@@ -29,8 +29,10 @@ fun DialogWithImage(
     onConfirmation: () -> Unit,
     painter: Painter,
     imageDescription: String,
-    rayonValue: MutableState<String>,
-    hauteurValue: MutableState<String>
+    rayonValue: MutableState<String>?,
+    hauteurValue: MutableState<String>?,
+    longueurValue: MutableState<String>?,
+    largeurValue: MutableState<String>?
 ) {
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
@@ -55,40 +57,88 @@ fun DialogWithImage(
                         .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedTextField(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f),
-                        value = rayonValue.value,
-                        singleLine = true,
-                        onValueChange = { rayonValue.value = it },
-                        label = { Text("Rayon (r)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                    Text(
-                        modifier = Modifier.weight(0.3f),
-                        text = "mètres"
-                    )
+                    rayonValue?.value?.let {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(1f),
+                            value = it,
+                            singleLine = true,
+                            onValueChange = { rayonValue.value = it },
+                            label = { Text("Rayon (r)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Text(
+                            modifier = Modifier.weight(0.3f),
+                            text = "mètres"
+                        )
+                    }
                 }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
+                hauteurValue?.let {
+                    Row(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .weight(1f),
-                        value = hauteurValue.value,
-                        singleLine = true,
-                        onValueChange = { hauteurValue.value = it },
-                        label = { Text("Hauteur (H)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
-                    Text(
-                        modifier = Modifier.weight(0.3f),
-                        text = "mètres"
-                    )
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(1f),
+                            value = hauteurValue.value,
+                            singleLine = true,
+                            onValueChange = { hauteurValue.value = it },
+                            label = { Text("Hauteur (H)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Text(
+                            modifier = Modifier.weight(0.3f),
+                            text = "mètres"
+                        )
+                    }
+                }
+                longueurValue?.let {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(1f),
+                            value = longueurValue.value,
+                            singleLine = true,
+                            onValueChange = { longueurValue.value = it },
+                            label = { Text("Longueur (L)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Text(
+                            modifier = Modifier.weight(0.3f),
+                            text = "mètres"
+                        )
+                    }
+                }
+                largeurValue?.let {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .weight(1f),
+                            value = largeurValue.value,
+                            singleLine = true,
+                            onValueChange = { largeurValue.value = it },
+                            label = { Text("Largeur (l)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        Text(
+                            modifier = Modifier.weight(0.3f),
+                            text = "mètres"
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier

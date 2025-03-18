@@ -14,5 +14,5 @@ data class VolumeState(
 )
 
 sealed class Volume {
-    enum class VolumeType { CONE, CYLINDER }
+    enum class VolumeType { CONE, CYLINDER, PAVE, SPHERE }
 }

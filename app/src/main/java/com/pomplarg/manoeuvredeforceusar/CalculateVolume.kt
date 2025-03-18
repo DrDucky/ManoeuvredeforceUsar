@@ -1,5 +1,6 @@
 package com.pomplarg.manoeuvredeforceusar
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,12 +53,22 @@ fun CalculateVolume(
     val poidsEnabled = remember { mutableStateOf(true) }
     val poidsValue = remember { mutableStateOf("") }
     val rayonValue = remember { mutableStateOf("") }
-    val density = remember { mutableDoubleStateOf(0.0) }
     val hauteurValue = remember { mutableStateOf("") }
+    val longueurValue = remember { mutableStateOf("") }
+    val largeurValue = remember { mutableStateOf("") }
+    val density = remember { mutableDoubleStateOf(0.0) }
     val openConeDialog = remember { mutableStateOf(false) }
     val openCylinderDialog = remember { mutableStateOf(false) }
+    val openPaveDialog = remember { mutableStateOf(false) }
+    val openSphereDialog = remember { mutableStateOf(false) }
     val materialItems = mapOf("Béton" to 2.0,
-        "Béton armé" to 5.0)
+        "Béton armé" to 5.0,
+        "Bois" to 1.5,
+        "Fer" to 7.0,
+        "Pierre" to 3.0,
+        "Terre" to 2.0,
+        "Acier" to 7.9,
+        "Sable" to 2.0)
     val categoryFrottementRoulement = listOf(FROTTEMENT_KEY,
         ROULEMENT_KEY)
     var categoryFrottementRoulementSelected = remember { mutableStateOf("Frottement") }
@@ -120,7 +131,7 @@ fun CalculateVolume(
             )
         }
         else {
-            Row(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.padding(16.dp).horizontalScroll(rememberScrollState())) {
                 AssistChip(
                     onClick = { openConeDialog.value = true },
                     label = { Text("Cône") },
@@ -162,6 +173,48 @@ fun CalculateVolume(
                         )
                     }
                 )
+                AssistChip(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    onClick = { openPaveDialog.value = true },
+                    label = { Text("Pavé droit") },
+                    trailingIcon = {
+                        if (volumeTypeSelected.value == Volume.VolumeType.PAVE.name) {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "item selected",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.cube),
+                            contentDescription = "cube icone",
+                            Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    }
+                )
+                AssistChip(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    onClick = { openSphereDialog.value = true },
+                    label = { Text("Sphère") },
+                    trailingIcon = {
+                        if (volumeTypeSelected.value == Volume.VolumeType.SPHERE.name) {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "item selected",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.sphere),
+                            contentDescription = "sphere icone",
+                            Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    }
+                )
             }
 
             when {
@@ -174,8 +227,10 @@ fun CalculateVolume(
                         },
                         painter = painterResource(id = R.drawable.volume_cone),
                         imageDescription = "",
-                        rayonValue,
-                        hauteurValue
+                        rayonValue = rayonValue,
+                        hauteurValue = hauteurValue,
+                        largeurValue = null,
+                        longueurValue = null
                     )
                 }
                 openCylinderDialog.value -> {
@@ -187,18 +242,50 @@ fun CalculateVolume(
                         },
                         painter = painterResource(id = R.drawable.volume_cylinder),
                         imageDescription = "",
-                        rayonValue,
-                        hauteurValue
+                        rayonValue = rayonValue,
+                        hauteurValue = hauteurValue,
+                        largeurValue = null,
+                        longueurValue = null
+                    )
+                }
+                openPaveDialog.value -> {
+                    DialogWithImage(
+                        onDismissRequest = { openPaveDialog.value = false },
+                        onConfirmation = {
+                            openPaveDialog.value = false
+                            volumeTypeSelected.value = Volume.VolumeType.PAVE.name
+                        },
+                        painter = painterResource(id = R.drawable.volume_pave),
+                        imageDescription = "",
+                        rayonValue = null,
+                        hauteurValue = hauteurValue,
+                        largeurValue = largeurValue,
+                        longueurValue = longueurValue
+                    )
+                }
+                openSphereDialog.value -> {
+                    DialogWithImage(
+                        onDismissRequest = { openSphereDialog.value = false },
+                        onConfirmation = {
+                            openSphereDialog.value = false
+                            volumeTypeSelected.value = Volume.VolumeType.SPHERE.name
+                        },
+                        painter = painterResource(id = R.drawable.volume_sphere),
+                        imageDescription = "",
+                        rayonValue = rayonValue,
+                        hauteurValue = null,
+                        largeurValue = null,
+                        longueurValue = null
                     )
                 }
             }
 
             FilterChipGroup(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 items = materialItems.keys.toList(),
                 onSelectedChanged = { selectedIndex ->
                     materialItems[materialItems.keys.toList()[selectedIndex]]?.let {
-                        density.value = it
+                        density.doubleValue = it
                     }
                 }
             )
@@ -209,7 +296,7 @@ fun CalculateVolume(
         })
 
         FilterChipGroup(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
             defaultSelectedItemIndex = 0,
             items = volumeViewModel.supportItems.keys.toList(),
             onSelectedChanged = { selectedIndex ->
@@ -230,15 +317,17 @@ fun CalculateVolume(
                 onClick = {
                     if(manualChoice.value) {
                         volumeViewModel.updateRFManuel(
-                            poidsValue.value.toDouble(),
+                            poidsValue.value.replace(',', '.').toDouble(),
                             categoryFrottementRoulementSelected.value,
                             supportFrottementRoulementSelected.value,
                             angleValue.floatValue)
                     } else {
                         volumeViewModel.updateRFCalcul(
                             volumeTypeSelected.value,
-                            rayonValue.value.toDouble(),
-                            hauteurValue.value.toDouble(),
+                            rayonValue.value,
+                            hauteurValue.value,
+                            largeurValue.value,
+                            longueurValue.value,
                             density.doubleValue,
                             categoryFrottementRoulementSelected.value,
                             supportFrottementRoulementSelected.value,
