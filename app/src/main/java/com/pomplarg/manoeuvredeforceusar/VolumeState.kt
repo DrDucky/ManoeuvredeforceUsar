@@ -7,9 +7,15 @@ data class VolumeState(
     val nbBrins: Int = 0,
     val crBrins: Double = 0.0,
     val a1: Double = 0.0,
+    val a2: Double = 0.0,
+    val a3: Double = 0.0,
+    val a4: Double = 0.0,
+    val a5: Double = 0.0,
     val a1Activated: Boolean = false,
     val a2Activated: Boolean = false,
     val a3Activated: Boolean = false,
+    val a4Activated: Boolean = false,
+    val a5Activated: Boolean = false,
     val safety: Double = 0.0
 )
 

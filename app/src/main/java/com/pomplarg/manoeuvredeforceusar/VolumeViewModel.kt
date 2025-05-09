@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.text.NumberFormat
-import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.ceil
@@ -108,7 +106,9 @@ class VolumeViewModel : ViewModel() {
             it.copy(
                 a1Activated = nbBrins >= 1,
                 a2Activated = nbBrins >= 2,
-                a3Activated = nbBrins >= 3
+                a3Activated = nbBrins >= 3,
+                a4Activated = nbBrins >= 4,
+                a5Activated = nbBrins >= 5
             )
         }
     }
@@ -117,11 +117,31 @@ class VolumeViewModel : ViewModel() {
         _volumeState.update { it.copy(a1 = _volumeState.value.rf / _volumeState.value.crBrins) }
     }
 
+    private fun updateA2() {
+        _volumeState.update { it.copy(a2 = _volumeState.value.a1 * 0.9) }
+    }
+
+    private fun updateA3() {
+        _volumeState.update { it.copy(a3 = _volumeState.value.a2 * 0.9) }
+    }
+
+    private fun updateA4() {
+        _volumeState.update { it.copy(a4 = _volumeState.value.a3 * 0.9) }
+    }
+
+    private fun updateA5() {
+        _volumeState.update { it.copy(a5 = _volumeState.value.a4 * 0.9) }
+    }
+
     private fun updateSecurity() {
         val security =
             ((_volumeState.value.emd * _volumeState.value.crBrins - _volumeState.value.rf) / _volumeState.value.rf) * 100
         _volumeState.update { it.copy(safety = security) }
         updateA1()
+        updateA2()
+        updateA3()
+        updateA4()
+        updateA5()
     }
 
     private fun calculateVolume(volumeType: String?, rayon: String?, hauteur: String?, largeur: String?, longueur: String?): Double {

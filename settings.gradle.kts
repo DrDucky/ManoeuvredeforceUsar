@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Manoeuvre de Force USAR"
+rootProject.name = "MDF USAR"
 include(":app")
  

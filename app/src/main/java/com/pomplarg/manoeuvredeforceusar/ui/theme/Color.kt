@@ -17,3 +17,7 @@ val Error40 = Color(0xFFba1a1a)
 val SurfaceDim = Color(0xFFd8dae0)
 val Surface = Color(0xFFf7f9ff)
 
+val AColor = Color(0xFF23a87c)
+val BColor = Color(0xFFba1a1a)
+
+
